@@ -615,7 +615,7 @@
     ];
 
     let selectedBrand = BRANDS[0];
-    let selectedEC = 'H'; // Default to H to support larger logos
+    let selectedEC = 'H'; 
     let lastQRData = null;
 
     // Render brand buttons
@@ -662,6 +662,12 @@
 
     // ─── Generate QR ──────────────────────────────────────────────────────────
     async function generateQR() {
+      // Safety check if the external script hasn't arrived yet
+      if (typeof QRCode === 'undefined') {
+        showToast('Waiting for QR Engine to load...');
+        return;
+      }
+
       const urlData     = document.getElementById('urlData').value.trim() || 'https://www.airasia.com';
       const size        = parseInt(document.getElementById('qrSize').value);
       const logoSizePct = parseInt(document.getElementById('logoSize').value) / 100;
@@ -683,14 +689,13 @@
           color: { dark: qrColor, light: bgColor }
         });
 
-        // Draw custom brand logo on canvas
         const ctx = canvas.getContext('2d');
         const logoSize = Math.round(size * logoSizePct);
         const logoX = (size - logoSize) / 2;
         const logoY = (size - logoSize) / 2;
         const padding = logoSize * 0.12;
 
-        // White box behind logo to ensure readability
+        // White box behind logo
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.roundRect(logoX - padding, logoY - padding, logoSize + padding*2, logoSize + padding*2, 8);
@@ -702,18 +707,15 @@
         ctx.roundRect(logoX, logoY, logoSize, logoSize, 6);
         ctx.fill();
 
-        // Draw Brand text dynamically tailored to fit the box
+        // Draw Brand text
         ctx.fillStyle = selectedBrand.fg;
-        
-        // Calculate dynamic font size based on string length to fit beautifully in the box
         const textLen = selectedBrand.text.length;
         const calcFontSize = Math.round((logoSize * 1.5) / textLen);
-        const finalFontSize = Math.min(calcFontSize, Math.round(logoSize * 0.45)); // Cap max size
+        const finalFontSize = Math.min(calcFontSize, Math.round(logoSize * 0.45)); 
         
         ctx.font = `${selectedBrand.font} ${finalFontSize}px 'Arial Black', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        // Nudge Y-axis slightly up for visual centering with most caps/scripts
         ctx.fillText(selectedBrand.text, logoX + logoSize/2, logoY + logoSize/2 + 1);
 
         // Render preview
@@ -776,8 +778,8 @@
       setTimeout(() => t.classList.remove('show'), 2500);
     }
 
-    // Auto-generate on load once everything is fully ready
-window.addEventListener('load', generateQR);
+    // CRITICAL FIX: Strictly wait for everything (including the external QR engine script) to be parsed before initial generation
+    window.addEventListener('load', generateQR);
   </script>
 </body>
 </html>
