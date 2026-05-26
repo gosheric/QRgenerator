@@ -776,8 +776,8 @@
       setTimeout(() => t.classList.remove('show'), 2500);
     }
 
-    // Auto-generate on load
-    generateQR();
+    // Auto-generate on load once everything is fully ready
+window.addEventListener('load', generateQR);
   </script>
 </body>
 </html>
