@@ -1,785 +1,482 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AirAsia Group QR Generator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+  <title>AirAsia QR Form Generator</title>
+  //fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
-      --red: #FF0000;
-      --dark-red: #CC0000;
-      --black: #0A0A0A;
-      --white: #FFFFFF;
-      --grey: #1A1A1A;
-      --light-grey: #F5F5F5;
-      --muted: #888;
+      --red:#FF0000; --dark-red:#CC0000; --black:#0A0A0A;
+      --white:#FFFFFF; --grey:#1A1A1A; --muted:#888; --border:rgba(255,255,255,0.08);
+      --surface:#141414; --surface2:#1E1E1E; --radius:12px;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: var(--black);
-      color: var(--white);
-      font-family: 'Barlow', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* Animated background */
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,0,0,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,0,0,0.04) 1px, transparent 1px);
-      background-size: 40px 40px;
-      z-index: 0;
-      pointer-events: none;
-    }
-    .bg-glow {
-      position: fixed;
-      top: -200px;
-      right: -200px;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, transparent 70%);
-      z-index: 0;
-      pointer-events: none;
-      animation: pulse 4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.1); }
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 40px 24px 80px;
-    }
-
-    /* Header */
-    header {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 60px;
-    }
-    .logo-mark {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .aa-logo-svg {
-      width: 52px;
-      height: 52px;
-    }
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-    }
-    .brand-name {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      line-height: 1;
-      color: var(--white);
-    }
-    .brand-sub {
-      font-size: 11px;
-      color: var(--red);
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    .header-divider {
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(to right, rgba(255,0,0,0.3), transparent);
-    }
-    .header-tag {
-      font-size: 11px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    /* Page title */
-    .page-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(42px, 7vw, 80px);
-      font-weight: 800;
-      line-height: 0.95;
-      margin-bottom: 8px;
-      letter-spacing: -1px;
-    }
-    .page-title span { color: var(--red); }
-    .page-desc {
-      color: var(--muted);
-      font-size: 15px;
-      margin-bottom: 48px;
-      font-weight: 300;
-    }
-
-    /* Main layout */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      align-items: start;
-    }
-    @media (max-width: 768px) {
-      .main-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Controls panel */
-    .panel {
-      background: var(--grey);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
-      padding: 28px;
-    }
-    .panel-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--red);
-      margin-bottom: 24px;
-      font-weight: 600;
-    }
-
-    /* Airline selector */
-    .airline-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-    .airline-btn {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      padding: 12px 8px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s;
-      color: var(--white);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    .airline-btn:hover {
-      border-color: rgba(255,255,255,0.3);
-      background: rgba(255,255,255,0.08);
-    }
-    .airline-btn.active {
-      border-color: var(--red);
-      background: rgba(255,0,0,0.15);
-    }
-    .brand-preview {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 900;
-      color: white;
-      text-transform: lowercase;
-    }
-    .airline-name {
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.5px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .airline-btn.active .airline-name { color: var(--white); }
-
-    /* Form fields */
-    .field {
-      margin-bottom: 20px;
-    }
-    .field label {
-      display: block;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    
-    /* Textarea for URL */
-    .field textarea {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 16px;
-      color: var(--white);
-      font-family: 'Barlow', sans-serif;
-      font-size: 15px;
-      resize: vertical;
-      min-height: 100px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .field textarea:focus { border-color: rgba(255,0,0,0.5); }
-
-    /* Color pickers */
-    .color-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .color-field label {
-      display: block;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    .color-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 8px 12px;
-    }
-    .color-input-wrap input[type=color] {
-      width: 28px;
-      height: 28px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      padding: 0;
-      border-radius: 4px;
-    }
-    .color-hex {
-      font-size: 13px;
-      color: var(--muted);
-      font-family: monospace;
-    }
-
-    /* Size slider */
-    .slider-wrap {
-      margin-bottom: 20px;
-    }
-    .slider-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .slider-label {
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .slider-val {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--red);
-    }
-    input[type=range] {
-      width: 100%;
-      accent-color: var(--red);
-      cursor: pointer;
-    }
-
-    /* Generate button */
-    .btn-generate {
-      width: 100%;
-      background: var(--red);
-      color: var(--white);
-      border: none;
-      border-radius: 12px;
-      padding: 16px;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 4px;
-    }
-    .btn-generate:hover {
-      background: var(--dark-red);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 32px rgba(255,0,0,0.3);
-    }
-    .btn-generate:active { transform: translateY(0); }
-
-    /* QR Preview */
-    .qr-panel {
-      position: sticky;
-      top: 24px;
-    }
-    .qr-display {
-      background: var(--grey);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
-      padding: 32px;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    .qr-canvas-wrap {
-      position: relative;
-      display: inline-block;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    #qrCanvas {
-      display: block;
-      border-radius: 8px;
-    }
-
-    /* Download buttons */
-    .download-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .btn-download {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 12px;
-      color: var(--white);
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-transform: uppercase;
-    }
-    .btn-download:hover {
-      border-color: rgba(255,0,0,0.4);
-      background: rgba(255,0,0,0.08);
-    }
-
-    /* QR info */
-    .qr-info {
-      margin-top: 16px;
-      background: var(--grey);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 16px 20px;
-    }
-    .qr-info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      color: var(--muted);
-      padding: 4px 0;
-    }
-    .qr-info-val {
-      color: var(--white);
-      font-weight: 500;
-      max-width: 60%;
-      text-align: right;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Placeholder */
-    .qr-placeholder {
-      width: 260px;
-      height: 260px;
-      border: 2px dashed rgba(255,255,255,0.1);
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: var(--muted);
-      margin: 0 auto;
-    }
-    .placeholder-icon {
-      font-size: 48px;
-      opacity: 0.3;
-    }
-    .placeholder-text { font-size: 13px; letter-spacing: 1px; }
-
-    /* Error correction label */
-    .ec-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .ec-btn {
-      flex: 1;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      padding: 8px 4px;
-      cursor: pointer;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      transition: all 0.2s;
-    }
-    .ec-btn.active {
-      border-color: var(--red);
-      color: var(--white);
-      background: rgba(255,0,0,0.1);
-    }
-    .ec-label {
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--red);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 99px;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      transition: transform 0.3s ease;
-      z-index: 999;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden;}
+    .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,0,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,0,0,0.03) 1px,transparent 1px);background-size:40px 40px;}
+    .bg-glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;z-index:0;pointer-events:none;background:radial-gradient(circle,rgba(255,0,0,0.10) 0%,transparent 70%);animation:pulse 4s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.1)}}
+    .container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:32px 24px 80px;}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:48px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+    .header-logo{width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;}
+    .header-logo img{width:100%;height:100%;object-fit:cover;}
+    .brand-name{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;letter-spacing:1px;line-height:1;}
+    .brand-sub{font-size:11px;color:var(--red);letter-spacing:4px;text-transform:uppercase;font-weight:600;}
+    .header-div{flex:1;height:1px;background:linear-gradient(to right,rgba(255,0,0,0.3),transparent);}
+    .header-tag{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+    .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:32px;width:fit-content;}
+    .tab{padding:8px 20px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--muted);border:none;background:none;transition:all .2s;}
+    .tab.active{background:var(--red);color:#fff;}
+    .tab:hover:not(.active){color:#fff;background:rgba(255,255,255,0.05);}
+    .main-grid{display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start;}
+    @media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
+    .panel{background:var(--grey);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;}
+    .panel-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:18px;font-weight:600;}
+    .airline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    @media(max-width:500px){.airline-grid{grid-template-columns:repeat(2,1fr);}}
+    .airline-btn{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 8px 12px;cursor:pointer;text-align:center;transition:all .2s;color:var(--white);display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .airline-btn:hover{border-color:rgba(255,0,0,.4);background:rgba(255,0,0,.07);}
+    .airline-btn.active{border-color:var(--red);background:rgba(255,0,0,.12);}
+    .airline-btn-logo{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+    .airline-btn-logo img{width:100%;height:100%;object-fit:cover;}
+    .airline-code{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;line-height:1;}
+    .airline-name{font-size:9px;color:var(--muted);line-height:1.2;text-align:center;}
+    .airline-btn.active .airline-name{color:rgba(255,120,120,.8);}
+    .airline-banner{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;transition:all .3s;}
+    .airline-banner-logo{width:52px;height:52px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;}
+    .airline-banner-logo img{width:100%;height:100%;object-fit:cover;}
+    .airline-banner-info .name{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;}
+    .airline-banner-info .desc{font-size:12px;color:var(--muted);margin-top:2px;}
+    .airline-banner-badge{margin-left:auto;background:rgba(255,0,0,.12);border:1px solid rgba(255,0,0,.3);border-radius:99px;padding:4px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--red);}
+    .section-tabs{display:flex;gap:6px;margin-bottom:16px;}
+    .sec-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.02);color:var(--muted);transition:all .2s;}
+    .sec-tab.active{border-color:var(--red);color:var(--white);background:rgba(255,0,0,.08);}
+    .form-url-wrap{display:flex;gap:8px;margin-bottom:16px;}
+    .form-url-input{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px;outline:none;}
+    .form-url-input::placeholder{color:rgba(255,255,255,.2);}
+    .form-url-input:focus{border-color:rgba(255,0,0,.4);}
+    .btn-use-url{background:var(--red);border:none;border-radius:8px;padding:10px 16px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all .2s;}
+    .btn-use-url:hover{background:var(--dark-red);}
+    .form-fields{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+    .form-field-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:10px 14px;}
+    .field-drag{color:rgba(255,255,255,.15);font-size:16px;user-select:none;}
+    .form-field-row input[type=text]{flex:1;background:none;border:none;outline:none;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px;}
+    .form-field-row input[type=text]::placeholder{color:rgba(255,255,255,.2);}
+    .field-type-sel{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:5px;padding:3px 7px;color:var(--muted);font-size:11px;outline:none;}
+    .field-required-toggle{width:18px;height:18px;border-radius:3px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);transition:all .2s;flex-shrink:0;}
+    .field-required-toggle.req{border-color:var(--red);background:rgba(255,0,0,.15);color:var(--red);}
+    .btn-remove-field{background:none;border:none;color:rgba(255,100,100,.4);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;transition:color .2s;}
+    .btn-remove-field:hover{color:rgba(255,80,80,.9);}
+    .add-field-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .btn-add-field{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:7px 13px;color:var(--muted);font-family:'Barlow',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+    .btn-add-field:hover{border-color:rgba(255,0,0,.4);color:var(--white);background:rgba(255,0,0,.06);}
+    .form-preview-wrap{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px;}
+    .form-preview-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600;}
+    .preview-field{margin-bottom:12px;}
+    .preview-label{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px;display:flex;gap:4px;align-items:center;}
+    .preview-label .req-star{color:var(--red);font-size:12px;}
+    .preview-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:rgba(255,255,255,.4);font-size:13px;font-family:'Barlow',sans-serif;}
+    .preview-input.textarea{height:60px;resize:none;}
+    .qr-sticky{position:sticky;top:24px;}
+    .qr-display{background:var(--grey);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;margin-bottom:14px;}
+    .qr-placeholder{width:240px;height:240px;border:2px dashed rgba(255,255,255,.08);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);margin:0 auto;}
+    .ph-icon{font-size:40px;opacity:.15;}
+    .ph-text{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;}
+    #qrOutput{display:none;}
+    #qrOutput.show{display:block;}
+    .qr-badge{display:none;align-items:center;gap:8px;background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);border-radius:99px;padding:6px 16px;margin-top:16px;justify-content:center;}
+    .qr-badge.show{display:inline-flex;}
+    .qr-dot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:blink 1.5s ease-in-out infinite;flex-shrink:0;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .qr-badge-text{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;}
+    .style-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+    .style-field label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:600;}
+    .color-wrap{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:7px 10px;}
+    .color-wrap input[type=color]{width:24px;height:24px;border:none;background:none;cursor:pointer;padding:0;border-radius:3px;}
+    .color-hex{font-size:12px;color:var(--muted);font-family:monospace;}
+    .slider-wrap{margin-bottom:14px;}
+    .slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .slider-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+    .slider-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--red);}
+    input[type=range]{width:100%;accent-color:var(--red);cursor:pointer;}
+    .ec-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:600;}
+    .ec-row{display:flex;gap:6px;margin-bottom:14px;}
+    .ec-btn{flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:7px 4px;cursor:pointer;text-align:center;color:var(--muted);font-size:12px;font-weight:600;transition:all .2s;}
+    .ec-btn.active{border-color:var(--red);color:var(--white);background:rgba(255,0,0,.1);}
+    .btn-generate{width:100%;background:var(--red);color:var(--white);border:none;border-radius:10px;padding:15px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+    .btn-generate:hover{background:var(--dark-red);transform:translateY(-1px);box-shadow:0 8px 28px rgba(255,0,0,.3);}
+    .dl-row{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+    .dl-row.show{display:grid;}
+    .btn-dl{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:11px;color:var(--white);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+    .btn-dl:hover{border-color:rgba(255,0,0,.4);background:rgba(255,0,0,.07);}
+    .qr-info{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;}
+    .qr-info.show{display:block;}
+    .info-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+    .info-row:last-child{border-bottom:none;}
+    .info-val{color:var(--white);font-weight:500;}
+    .qr-data-preview{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:10px;color:var(--muted);font-family:monospace;word-break:break-all;line-height:1.5;max-height:70px;overflow-y:auto;display:none;}
+    .qr-data-preview.show{display:block;}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--red);color:white;padding:10px 22px;border-radius:99px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;transition:transform .3s;z-index:999;white-space:nowrap;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="bg-glow"></div>
-
-  <div class="container">
-    <header>
-      <div class="logo-mark">
-        <svg class="aa-logo-svg" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="52" height="52" rx="10" fill="#FF0000"/>
-          <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle"
-                font-family="Arial Black, sans-serif" font-size="13" font-weight="900"
-                fill="white" letter-spacing="-0.5">AA</text>
-        </svg>
-        <div class="brand-text">
-          <span class="brand-name">GROUND OPS QR Generator</span>
-          <span class="brand-sub">Forms & Links QR Generator</span>
-        </div>
-      </div>
-      <div class="header-divider"></div>
-      <span class="header-tag">v3.0</span>
-    </header>
-
-    <div class="page-title">GENERATE<br><span>BRANDED QRs</span></div>
-    <p class="page-desc">Create custom QR codes for Google Forms, surveys, and links across all AirAsia Group brands.</p>
-
-    <div class="main-grid">
-
-      <div>
-        <div class="panel" style="margin-bottom:16px">
-          <div class="panel-title">Select Brand</div>
-          <div class="airline-grid" id="brandGrid">
-            </div>
-        </div>
-
-        <div class="panel" style="margin-bottom:16px">
-          <div class="panel-title">QR Data Source</div>
-          <div class="field">
-            <label>Form / URL Link</label>
-            <textarea id="urlData" placeholder="e.g. https://forms.gle/... or https://airasia.com"></textarea>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">QR Style</div>
-
-          <div class="slider-wrap">
-            <div class="slider-header">
-              <span class="slider-label">Size</span>
-              <span class="slider-val" id="sizeVal">280px</span>
-            </div>
-            <input type="range" id="qrSize" min="180" max="400" value="280" step="10"/>
-          </div>
-
-          <div class="slider-wrap">
-            <div class="slider-header">
-              <span class="slider-label">Logo Size</span>
-              <span class="slider-val" id="logoSizeVal">22%</span>
-            </div>
-            <input type="range" id="logoSize" min="10" max="30" value="22" step="1"/>
-          </div>
-
-          <div class="color-row">
-            <div class="color-field">
-              <label>QR Color</label>
-              <div class="color-input-wrap">
-                <input type="color" id="qrColor" value="#000000"/>
-                <span class="color-hex" id="qrColorHex">#000000</span>
-              </div>
-            </div>
-            <div class="color-field">
-              <label>Background</label>
-              <div class="color-input-wrap">
-                <input type="color" id="bgColor" value="#FFFFFF"/>
-                <span class="color-hex" id="bgColorHex">#FFFFFF</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="ec-label">Error Correction</div>
-          <div class="ec-row" id="ecRow">
-            <button class="ec-btn" data-ec="L">L</button>
-            <button class="ec-btn" data-ec="M">M</button>
-            <button class="ec-btn" data-ec="Q">Q</button>
-            <button class="ec-btn active" data-ec="H">H — Recommended for logos</button>
-          </div>
-
-          <button class="btn-generate" onclick="generateQR()">⚡ Generate QR</button>
-        </div>
-      </div>
-
-      <div class="qr-panel">
-        <div class="qr-display">
-          <div id="qrPreview">
-            <div class="qr-placeholder">
-              <div class="placeholder-icon">◻</div>
-              <div class="placeholder-text">QR CODE PREVIEW</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="download-row" id="downloadBtns" style="display:none">
-          <button class="btn-download" onclick="downloadQR('png')">⬇ PNG</button>
-          <button class="btn-download" onclick="downloadQR('svg')">⬇ SVG</button>
-        </div>
-
-        <div class="qr-info" id="qrInfo" style="display:none">
-          <div class="qr-info-row">
-            <span>Brand Overlay</span>
-            <span class="qr-info-val" id="infoBrand">—</span>
-          </div>
-          <div class="qr-info-row">
-            <span>Linked URL</span>
-            <span class="qr-info-val" id="infoUrl">—</span>
-          </div>
-          <div class="qr-info-row">
-            <span>Error Correction</span>
-            <span class="qr-info-val" id="infoEC">—</span>
-          </div>
-        </div>
-      </div>
-
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="container">
+  <header>
+    <div class="header-logo">
+      <img src="https://pplx-res.cloudinary.com/image/upload/pplx_search_images/4492fd89cf5241897f7641e23329fbf73fdcba12.jpg" alt="AirAsia" id="headerLogoImg">
     </div>
+    <div>
+      <div class="brand-name" id="headerBrandName">AIRASIA</div>
+      <div class="brand-sub">QR Generator</div>
+    </div>
+    <div class="header-div"></div>
+    <div class="header-tag">Form &amp; QR Tool</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('form')">Form QR</button>
+    <button class="tab" onclick="switchTab('direct')">Direct URL</button>
+    <button class="tab" onclick="switchTab('custom')">Custom Text</button>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="main-grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title">Select Airline</div>
+        <div class="airline-grid" id="airlineGrid"></div>
+      </div>
 
-  <script>
-    // ─── Brands ─────────────────────────────────────────────────────────────
-    const BRANDS = [
-      { code: 'AK', name: 'AirAsia', bg: '#FF0000', fg: '#FFFFFF', text: 'airasia', font: 'italic 900', short: 'AA' },
-      { code: 'MOVE', name: 'AirAsia MOVE', bg: '#00A859', fg: '#FFFFFF', text: 'MOVE', font: '900', short: 'MV' },
-      { code: 'SANTAN', name: 'Santan', bg: '#E32636', fg: '#FFFFFF', text: 'santan', font: 'italic 700', short: 'ST' },
-      { code: 'BIGPAY', name: 'BigPay', bg: '#0033CC', fg: '#FFFFFF', text: 'bigpay', font: '700', short: 'BP' },
-      { code: 'TELEPORT', name: 'Teleport', bg: '#152CFF', fg: '#FF00A0', text: 'teleport', font: '900', short: 'TP' },
-    ];
+      <div class="airline-banner" id="airlineBanner">
+        <div class="airline-banner-logo">
+          <img id="bannerLogoImg" src="" alt="">
+        </div>
+        <div class="airline-banner-info">
+          <div class="name" id="bannerName">AirAsia</div>
+          <div class="desc" id="bannerDesc">Low-cost carrier · Malaysia</div>
+        </div>
+        <div class="airline-banner-badge" id="bannerCode">AK</div>
+      </div>
 
-    let selectedBrand = BRANDS[0];
-    let selectedEC = 'H'; 
-    let lastQRData = null;
+      <div id="tabForm">
+        <div class="panel">
+          <div class="panel-title">Form Builder</div>
+          <div class="section-tabs">
+            <button class="sec-tab active" onclick="setFormMode('build')" id="modeBuild">Build Form</button>
+            <button class="sec-tab" onclick="setFormMode('url')" id="modeUrl">Link to URL</button>
+          </div>
+          <div id="buildMode">
+            <div class="form-fields" id="formFields"></div>
+            <div class="add-field-row">
+              <button class="btn-add-field" onclick="addField('text')">+ Text</button>
+              <button class="btn-add-field" onclick="addField('email')">+ Email</button>
+              <button class="btn-add-field" onclick="addField('phone')">+ Phone</button>
+              <button class="btn-add-field" onclick="addField('number')">+ Number</button>
+              <button class="btn-add-field" onclick="addField('textarea')">+ Long Text</button>
+              <button class="btn-add-field" onclick="addField('select')">+ Dropdown</button>
+              <button class="btn-add-field" onclick="addField('date')">+ Date</button>
+            </div>
+          </div>
+          <div id="urlMode" style="display:none;">
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Enter a Google Form, Microsoft Form, or any form URL. The QR will link directly to it.</p>
+            <div class="form-url-wrap">
+              <input type="text" class="form-url-input" id="formUrlInput" placeholder="https://forms.google.com/..."/>
+              <button class="btn-use-url" onclick="applyFormUrl()">Use URL</button>
+            </div>
+            <div id="urlStatus" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+          </div>
+        </div>
+        <div class="panel" id="formPreviewPanel" style="display:none;">
+          <div class="panel-title">Form Preview</div>
+          <div class="form-preview-wrap">
+            <div class="form-preview-title" id="formPreviewAirline">AirAsia Form</div>
+            <div id="formPreviewFields"></div>
+          </div>
+        </div>
+      </div>
 
-    // Render brand buttons
-    const grid = document.getElementById('brandGrid');
-    BRANDS.forEach((b, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'airline-btn' + (i === 0 ? ' active' : '');
-      btn.innerHTML = `
-        <div class="brand-preview" style="background:${b.bg}; color:${b.fg}">${b.short}</div>
-        <div class="airline-name">${b.name}</div>
-      `;
-      btn.onclick = () => {
-        document.querySelectorAll('.airline-btn').forEach(el => el.classList.remove('active'));
-        btn.classList.add('active');
-        selectedBrand = b;
-      };
-      grid.appendChild(btn);
-    });
+      <div id="tabDirect" style="display:none;">
+        <div class="panel">
+          <div class="panel-title">Direct URL</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Generate a QR code for any URL — website, booking page, or app link.</p>
+          <input type="text" class="form-url-input" style="width:100%;" id="directUrlInput" placeholder="https://airasia.com/..."/>
+        </div>
+      </div>
 
-    // Error correction buttons
-    document.querySelectorAll('.ec-btn').forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll('.ec-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedEC = btn.dataset.ec;
-      };
-    });
+      <div id="tabCustom" style="display:none;">
+        <div class="panel">
+          <div class="panel-title">Custom Text / Data</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Encode any text, vCard, WiFi credentials, or custom payload.</p>
+          <textarea class="form-url-input" style="width:100%;height:100px;resize:vertical;" id="customTextInput" placeholder="Enter any text, URL, or structured data..."></textarea>
+        </div>
+      </div>
+    </div>
 
-    // Sliders
-    document.getElementById('qrSize').addEventListener('input', e => {
-      document.getElementById('sizeVal').textContent = e.target.value + 'px';
-    });
-    document.getElementById('logoSize').addEventListener('input', e => {
-      document.getElementById('logoSizeVal').textContent = e.target.value + '%';
-    });
+    <div class="qr-sticky">
+      <div class="panel">
+        <div class="panel-title">QR Style</div>
+        <div class="style-row">
+          <div class="style-field">
+            abel>QR Color</label>
+            <div class="color-wrap">
+              <input type="color" id="qrColor" value="#000000">
+              <span class="color-hex" id="qrColorHex">#000000</span>
+            </div>
+          </div>
+          <div class="style-field">
+            abel>Background</label>
+            <div class="color-wrap">
+              <input type="color" id="bgColor" value="#FFFFFF">
+              <span class="color-hex" id="bgColorHex">#FFFFFF</span>
+            </div>
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-header"><span class="slider-lbl">QR Size</span><span class="slider-val" id="sizeVal">300px</span></div>
+          <input type="range" id="qrSize" min="160" max="600" value="300">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-header"><span class="slider-lbl">Logo Size</span><span class="slider-val" id="logoSzVal">22%</span></div>
+          <input type="range" id="logoSz" min="10" max="35" value="22">
+        </div>
+        <div class="ec-label">Error Correction</div>
+        <div class="ec-row">
+          <button class="ec-btn" data-ec="L">L</button>
+          <button class="ec-btn active" data-ec="M">M</button>
+          <button class="ec-btn" data-ec="Q">Q</button>
+          <button class="ec-btn" data-ec="H">H</button>
+        </div>
+        <button class="btn-generate" onclick="generateQR()">Generate QR</button>
+        <div class="dl-row" id="dlRow">
+          <button class="btn-dl" onclick="downloadQR('png')">↓ PNG</button>
+          <button class="btn-dl" onclick="downloadQR('svg')">↓ SVG</button>
+        </div>
+      </div>
 
-    // Color pickers
-    document.getElementById('qrColor').addEventListener('input', e => {
-      document.getElementById('qrColorHex').textContent = e.target.value;
-    });
-    document.getElementById('bgColor').addEventListener('input', e => {
-      document.getElementById('bgColorHex').textContent = e.target.value;
-    });
+      <div class="qr-display">
+        <div class="qr-placeholder" id="qrPlaceholder">
+          <div class="ph-icon">◻</div>
+          <div class="ph-text">QR Preview</div>
+        </div>
+        <div id="qrOutput"></div>
+        <div class="qr-badge" id="qrBadge">
+          <div class="qr-dot"></div>
+          <span class="qr-badge-text" id="qrBadgeText">READY</span>
+        </div>
+      </div>
 
-    // ─── Generate QR ──────────────────────────────────────────────────────────
-    async function generateQR() {
-      // Safety check if the external script hasn't arrived yet
-      if (typeof QRCode === 'undefined') {
-        showToast('Waiting for QR Engine to load...');
-        return;
-      }
+      <div class="qr-info" id="qrInfo">
+        <div class="info-row"><span>Airline</span><span class="info-val" id="infoAirline">—</span></div>
+        <div class="info-row"><span>Mode</span><span class="info-val" id="infoMode">—</span></div>
+        <div class="info-row"><span>EC Level</span><span class="info-val" id="infoEC">M</span></div>
+        <div class="info-row"><span>Data Length</span><span class="info-val" id="infoLen">—</span></div>
+      </div>
+      <div class="qr-data-preview" id="qrDataPreview"></div>
+    </div>
+  </div>
+</div>
 
-      const urlData     = document.getElementById('urlData').value.trim() || 'https://www.airasia.com';
-      const size        = parseInt(document.getElementById('qrSize').value);
-      const logoSizePct = parseInt(document.getElementById('logoSize').value) / 100;
-      const qrColor     = document.getElementById('qrColor').value;
-      const bgColor     = document.getElementById('bgColor').value;
+<div class="toast" id="toast"></div>
 
-      lastQRData = { urlData, size, logoSizePct, qrColor, bgColor, brand: selectedBrand };
+<script>
+const AIRLINES = [
+  { code:'AK', name:'AirAsia', desc:'Low-cost carrier · Malaysia', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/4492fd89cf5241897f7641e23329fbf73fdcba12.jpg' },
+  { code:'D7', name:'AirAsia X', desc:'Long-haul low cost · Malaysia', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/711f6a47bca79f8e6ac12d6ddf728df6118091af.jpg' },
+  { code:'Santan', name:'Santan', desc:'F&B brand · AirAsia Group', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/896e6e4529f3f645e41e99b8374bd4c0c47c1760.jpg' },
+  { code:'MOVE', name:'AirAsia MOVE', desc:'Super app · Travel & lifestyle', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/3377b7a67a963d66dcc876dfc6002e3faf339ecb.jpg' },
+  { code:'Teleport', name:'Teleport', desc:'Cargo & logistics · AirAsia', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/074fcfc097be51c85573a9503cc7e627dbfdf260.jpg' },
+  { code:'BigPay', name:'BigPay', desc:'Digital payments · Fintech', logo:'https://pplx-res.cloudinary.com/image/upload/pplx_search_images/e444324c7562df8e44c4ce2e2d82c23de808840b.jpg' }
+];
 
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        canvas.id = 'qrCanvas';
+let selectedAirline = AIRLINES[0], selectedEC = 'M', currentTab = 'form', formMode = 'build', formUrl = '', fieldCount = 0;
 
-        await QRCode.toCanvas(canvas, urlData, {
-          width: size,
-          margin: 2,
-          errorCorrectionLevel: selectedEC,
-          color: { dark: qrColor, light: bgColor }
-        });
+function initAirlineGrid() {
+  const grid = document.getElementById('airlineGrid');
+  grid.innerHTML = '';
+  AIRLINES.forEach((a, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'airline-btn' + (i===0?' active':'');
+    btn.innerHTML = `<div class="airline-btn-logo"><img src="${a.logo}" alt="${a.name}" loading="lazy"></div><div class="airline-code">${a.code}</div><div class="airline-name">${a.name}</div>`;
+    btn.onclick = () => { selectedAirline=a; document.querySelectorAll('.airline-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); updateBanner(a); updateFormPreviewTitle(); };
+    grid.appendChild(btn);
+  });
+}
 
-        const ctx = canvas.getContext('2d');
-        const logoSize = Math.round(size * logoSizePct);
-        const logoX = (size - logoSize) / 2;
-        const logoY = (size - logoSize) / 2;
-        const padding = logoSize * 0.12;
+function updateBanner(a) {
+  document.getElementById('bannerLogoImg').src = a.logo;
+  document.getElementById('bannerName').textContent = a.name;
+  document.getElementById('bannerDesc').textContent = a.desc;
+  document.getElementById('bannerCode').textContent = a.code;
+  document.getElementById('headerLogoImg').src = a.logo;
+  document.getElementById('headerBrandName').textContent = a.name.toUpperCase();
+}
 
-        // White box behind logo
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.roundRect(logoX - padding, logoY - padding, logoSize + padding*2, logoSize + padding*2, 8);
-        ctx.fill();
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['form','direct','custom'][i]===tab));
+  document.getElementById('tabForm').style.display = tab==='form'?'':'none';
+  document.getElementById('tabDirect').style.display = tab==='direct'?'':'none';
+  document.getElementById('tabCustom').style.display = tab==='custom'?'':'none';
+}
 
-        // Draw Brand background
-        ctx.fillStyle = selectedBrand.bg;
-        ctx.beginPath();
-        ctx.roundRect(logoX, logoY, logoSize, logoSize, 6);
-        ctx.fill();
+function setFormMode(mode) {
+  formMode = mode;
+  document.getElementById('modeBuild').classList.toggle('active', mode==='build');
+  document.getElementById('modeUrl').classList.toggle('active', mode==='url');
+  document.getElementById('buildMode').style.display = mode==='build'?'':'none';
+  document.getElementById('urlMode').style.display = mode==='url'?'':'none';
+  updateFormPreview();
+}
 
-        // Draw Brand text
-        ctx.fillStyle = selectedBrand.fg;
-        const textLen = selectedBrand.text.length;
-        const calcFontSize = Math.round((logoSize * 1.5) / textLen);
-        const finalFontSize = Math.min(calcFontSize, Math.round(logoSize * 0.45)); 
-        
-        ctx.font = `${selectedBrand.font} ${finalFontSize}px 'Arial Black', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(selectedBrand.text, logoX + logoSize/2, logoY + logoSize/2 + 1);
+function applyFormUrl() {
+  const val = document.getElementById('formUrlInput').value.trim();
+  if (!val) { showToast('Enter a form URL first'); return; }
+  formUrl = val;
+  document.getElementById('urlStatus').textContent = '✓ URL set — click Generate QR';
+  document.getElementById('urlStatus').style.color = '#4caf50';
+  showToast('URL READY ✓');
+}
 
-        // Render preview
-        const preview = document.getElementById('qrPreview');
-        preview.innerHTML = '';
-        preview.appendChild(canvas);
+function addField(type) {
+  fieldCount++;
+  const labels = {text:'Text Field',email:'Email Address',phone:'Phone Number',number:'Number',textarea:'Long Text',select:'Dropdown',date:'Date'};
+  const row = document.createElement('div');
+  row.className = 'form-field-row';
+  row.dataset.type = type;
+  row.dataset.required = 'false';
+  row.innerHTML = `<span class="field-drag">⠿</span><input type="text" placeholder="${labels[type]}" value="${labels[type]}" oninput="updateFormPreview()"><span class="field-type-sel">${type}</span><button class="field-required-toggle" title="Toggle required" onclick="toggleRequired(this)">R</button><button class="btn-remove-field" onclick="removeField(this)">×</button>`;
+  document.getElementById('formFields').appendChild(row);
+  updateFormPreview();
+}
 
-        // Info panel
-        document.getElementById('qrInfo').style.display = 'block';
-        document.getElementById('infoBrand').textContent = selectedBrand.name;
-        document.getElementById('infoUrl').textContent = urlData;
-        document.getElementById('infoEC').textContent = selectedEC;
+function toggleRequired(btn) {
+  const isReq = btn.classList.toggle('req');
+  btn.closest('.form-field-row').dataset.required = isReq?'true':'false';
+  updateFormPreview();
+}
 
-        document.getElementById('downloadBtns').style.display = 'grid';
+function removeField(btn) { btn.closest('.form-field-row').remove(); updateFormPreview(); }
 
+function updateFormPreview() {
+  const rows = document.querySelectorAll('.form-field-row');
+  const panel = document.getElementById('formPreviewPanel');
+  if (formMode==='url'||rows.length===0) { panel.style.display='none'; return; }
+  panel.style.display='';
+  updateFormPreviewTitle();
+  const container = document.getElementById('formPreviewFields');
+  container.innerHTML='';
+  rows.forEach(row=>{
+    const label = row.querySelector('input').value||'Field';
+    const type = row.dataset.type;
+    const req = row.dataset.required==='true';
+    const div = document.createElement('div');
+    div.className='preview-field';
+    let inp = type==='textarea'?`<textarea class="preview-input textarea" disabled placeholder="${label}..."></textarea>`:type==='select'?`<select class="preview-input" disabled><option>Select ${label}</option></select>`:`<input type="${type}" class="preview-input" disabled placeholder="${label}...">`;
+    div.innerHTML=`<div class="preview-label">${label}${req?'<span class="req-star">*</span>':''}</div>${inp}`;
+    container.appendChild(div);
+  });
+}
+
+function updateFormPreviewTitle() { const el=document.getElementById('formPreviewAirline'); if(el) el.textContent=selectedAirline.name+' — Form Preview'; }
+
+function getQRData() {
+  if (currentTab==='direct') return document.getElementById('directUrlInput').value.trim()||null;
+  if (currentTab==='custom') return document.getElementById('customTextInput').value.trim()||null;
+  if (formMode==='url') return formUrl||document.getElementById('formUrlInput').value.trim()||null;
+  const rows = document.querySelectorAll('.form-field-row');
+  if (rows.length===0) return null;
+  const fields=[];
+  rows.forEach(r=>{ const l=r.querySelector('input').value.trim()||'Field'; fields.push(`${encodeURIComponent(l)}:${r.dataset.type}:${r.dataset.required==='true'?'1':'0'}`); });
+  return `AAFORM:${selectedAirline.code}|`+fields.join('|');
+}
+
+function generateQR() {
+  const data = getQRData();
+  if (!data) { showToast('Add content or fields first!'); return; }
+  const size = parseInt(document.getElementById('qrSize').value);
+  const logoSizePct = parseInt(document.getElementById('logoSz').value)/100;
+  const qrColor = document.getElementById('qrColor').value;
+  const bgColor = document.getElementById('bgColor').value;
+  const ecMap = {L:QRCode.CorrectLevel.L, M:QRCode.CorrectLevel.M, Q:QRCode.CorrectLevel.Q, H:QRCode.CorrectLevel.H};
+  const outputEl = document.getElementById('qrOutput');
+  outputEl.innerHTML='';
+  const tempDiv = document.createElement('div');
+  tempDiv.style.display='none';
+  document.body.appendChild(tempDiv);
+  try {
+    new QRCode(tempDiv,{text:data,width:size,height:size,colorDark:qrColor,colorLight:bgColor,correctLevel:ecMap[selectedEC]||QRCode.CorrectLevel.M});
+    setTimeout(()=>{
+      const srcCanvas = tempDiv.querySelector('canvas');
+      if (!srcCanvas) { showToast('Error generating QR'); document.body.removeChild(tempDiv); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width=canvas.height=size;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(srcCanvas,0,0);
+      const logoImg=new Image();
+      logoImg.crossOrigin='anonymous';
+      const finish=()=>{
+        canvas.id='qrCanvas';
+        outputEl.innerHTML='';
+        outputEl.appendChild(canvas);
+        outputEl.classList.add('show');
+        document.getElementById('qrPlaceholder').style.display='none';
+        document.getElementById('qrBadge').classList.add('show');
+        document.getElementById('qrBadgeText').textContent=`${selectedAirline.code} · READY`;
+        document.getElementById('dlRow').classList.add('show');
+        document.getElementById('qrInfo').classList.add('show');
+        document.getElementById('infoAirline').textContent=`${selectedAirline.code} — ${selectedAirline.name}`;
+        document.getElementById('infoMode').textContent=currentTab==='form'?(formMode==='url'?'Form URL':'Form Schema'):currentTab==='direct'?'Direct URL':'Custom Text';
+        document.getElementById('infoEC').textContent=selectedEC;
+        document.getElementById('infoLen').textContent=data.length+' chars';
+        const preview=document.getElementById('qrDataPreview');
+        preview.textContent=data; preview.classList.add('show');
+        document.body.removeChild(tempDiv);
         showToast('QR GENERATED ✓');
-      } catch (err) {
-        showToast('Error: ' + err.message);
-        console.error(err);
-      }
-    }
+        window._lastQRCanvas=canvas;
+      };
+      logoImg.onload=()=>{
+        const ls=Math.round(size*logoSizePct), lx=Math.round((size-ls)/2), ly=lx, pad=Math.round(ls*0.15);
+        ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2); ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2,0,Math.PI*2); ctx.clip();
+        ctx.drawImage(logoImg,lx,ly,ls,ls); ctx.restore();
+        finish();
+      };
+      logoImg.onerror=finish;
+      logoImg.src=selectedAirline.logo;
+    },200);
+  } catch(e) { showToast('Error: data too long or invalid'); document.body.removeChild(tempDiv); }
+}
 
-    // ─── Download ─────────────────────────────────────────────────────────────
-    function downloadQR(format) {
-      const canvas = document.getElementById('qrCanvas');
-      if (!canvas) return;
+function downloadQR(fmt) {
+  const canvas=window._lastQRCanvas;
+  if (!canvas) { showToast('Generate a QR first!'); return; }
+  const fname=selectedAirline.code+'_QR';
+  if (fmt==='png') {
+    const a=document.createElement('a'); a.download=fname+'.png'; a.href=canvas.toDataURL('image/png'); a.click();
+  } else {
+    const d=canvas.toDataURL('image/png'), s=canvas.width;
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" width="${s}" height="${s}"><image href="${d}" width="${s}" height="${s}"/></svg>`;
+    const blob=new Blob([svg],{type:'image/svg+xml'});
+    const a=document.createElement('a'); a.download=fname+'.svg'; a.href=URL.createObjectURL(blob); a.click();
+  }
+  showToast('DOWNLOADING '+fmt.toUpperCase()+' ↓');
+}
 
-      const filename = `${selectedBrand.name.replace(/\s+/g, '_')}_QR_${Date.now()}`;
+document.querySelectorAll('.ec-btn').forEach(btn=>{ btn.onclick=()=>{ document.querySelectorAll('.ec-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedEC=btn.dataset.ec; }; });
+document.getElementById('qrSize').oninput=e=>document.getElementById('sizeVal').textContent=e.target.value+'px';
+document.getElementById('logoSz').oninput=e=>document.getElementById('logoSzVal').textContent=e.target.value+'%';
+document.getElementById('qrColor').oninput=e=>document.getElementById('qrColorHex').textContent=e.target.value;
+document.getElementById('bgColor').oninput=e=>document.getElementById('bgColorHex').textContent=e.target.value;
 
-      if (format === 'png') {
-        const link = document.createElement('a');
-        link.download = filename + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } else if (format === 'svg') {
-        QRCode.toString(lastQRData.urlData, {
-          type: 'svg',
-          width: lastQRData.size,
-          margin: 2,
-          errorCorrectionLevel: selectedEC,
-          color: { dark: lastQRData.qrColor, light: lastQRData.bgColor }
-        }, (err, svgStr) => {
-          if (err) return;
-          const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-          const link = document.createElement('a');
-          link.download = filename + '.svg';
-          link.href = URL.createObjectURL(blob);
-          link.click();
-        });
-      }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
-      showToast(`DOWNLOADING ${format.toUpperCase()} ↓`);
-    }
-
-    // ─── Toast ─────────────────────────────────────────────────────────────────
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2500);
-    }
-
-    // CRITICAL FIX: Strictly wait for everything (including the external QR engine script) to be parsed before initial generation
-    window.addEventListener('load', generateQR);
-  </script>
+initAirlineGrid();
+updateBanner(selectedAirline);
+addField('text');
+addField('email');
+</script>
 </body>
 </html>
