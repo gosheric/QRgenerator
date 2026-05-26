@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AirAsia QR Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    :root {
+      --red: #FF0000;
+      --dark-red: #CC0000;
+      --black: #0A0A0A;
+      --white: #FFFFFF;
+      --grey: #1A1A1A;
+      --light-grey: #F5F5F5;
+      --muted: #888;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,0,0,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .bg-glow {
+      position: fixed;
+      top: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+      animation: pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .aa-logo-svg {
+      width: 52px;
+      height: 52px;
+    }
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      line-height: 1;
+      color: var(--white);
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--red);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .header-divider {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(255,0,0,0.3), transparent);
+    }
+    .header-tag {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Page title */
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 800;
+      line-height: 0.95;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+    .page-title span { color: var(--red); }
+    .page-desc {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    /* Main layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Controls panel */
+    .panel {
+      background: var(--grey);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .panel-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    /* Airline selector */
+    .airline-label {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .airline-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .airline-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      color: var(--white);
+    }
+    .airline-btn:hover {
+      border-color: rgba(255,0,0,0.4);
+      background: rgba(255,0,0,0.08);
+    }
+    .airline-btn.active {
+      border-color: var(--red);
+      background: rgba(255,0,0,0.15);
+    }
+    .airline-code {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .airline-name {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      margin-top: 3px;
+    }
+    .airline-btn.active .airline-name { color: rgba(255,100,100,0.8); }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 20px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--white);
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: rgba(255,0,0,0.5);
+    }
+    .field select option { background: #1a1a1a; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Textarea */
+    .field textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--white);
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field textarea:focus { border-color: rgba(255,0,0,0.5); }
+
+    /* Color pickers */
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .color-field label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .color-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    .color-input-wrap input[type=color] {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 4px;
+    }
+    .color-hex {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* Size slider */
+    .slider-wrap {
+      margin-bottom: 20px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .slider-label {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .slider-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--red);
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--red);
+      cursor: pointer;
+    }
+
+    /* Generate button */
+    .btn-generate {
+      width: 100%;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+    .btn-generate:hover {
+      background: var(--dark-red);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(255,0,0,0.3);
+    }
+    .btn-generate:active { transform: translateY(0); }
+
+    /* QR Preview */
+    .qr-panel {
+      position: sticky;
+      top: 24px;
+    }
+    .qr-display {
+      background: var(--grey);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .qr-canvas-wrap {
+      position: relative;
+      display: inline-block;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #qrCanvas {
+      display: block;
+      border-radius: 8px;
+    }
+    .logo-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .logo-overlay svg {
+      display: block;
+    }
+
+    .qr-flight-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,0,0,0.1);
+      border: 1px solid rgba(255,0,0,0.3);
+      border-radius: 99px;
+      padding: 6px 16px;
+      margin-top: 20px;
+    }
+    .qr-flight-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+    .qr-flight-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+
+    /* Download buttons */
+    .download-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-download {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--white);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn-download:hover {
+      border-color: rgba(255,0,0,0.4);
+      background: rgba(255,0,0,0.08);
+    }
+
+    /* QR info */
+    .qr-info {
+      margin-top: 16px;
+      background: var(--grey);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .qr-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 4px 0;
+    }
+    .qr-info-val {
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    /* Placeholder */
+    .qr-placeholder {
+      width: 260px;
+      height: 260px;
+      border: 2px dashed rgba(255,255,255,0.1);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+      margin: 0 auto;
+    }
+    .placeholder-icon {
+      font-size: 48px;
+      opacity: 0.3;
+    }
+    .placeholder-text { font-size: 13px; letter-spacing: 1px; }
+
+    /* Error correction label */
+    .ec-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .ec-btn {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 4px;
+      cursor: pointer;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .ec-btn.active {
+      border-color: var(--red);
+      color: var(--white);
+      background: rgba(255,0,0,0.1);
+    }
+    .ec-label {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--red);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 99px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      transition: transform 0.3s ease;
+      z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-mark">
+        <!-- AirAsia logo SVG (simplified brand mark) -->
+        <svg class="aa-logo-svg" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="52" height="52" rx="10" fill="#FF0000"/>
+          <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle"
+                font-family="Arial Black, sans-serif" font-size="13" font-weight="900"
+                fill="white" letter-spacing="-0.5">AA</text>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">AIRASIA</span>
+          <span class="brand-sub">QR Generator</span>
+        </div>
+      </div>
+      <div class="header-divider"></div>
+      <span class="header-tag">v2.0</span>
+    </header>
+
+    <!-- Title -->
+    <div class="page-title">GENERATE<br><span>QR CODES</span></div>
+    <p class="page-desc">Create branded boarding & check-in QR codes for all AirAsia Group airlines.</p>
+
+    <!-- Main grid -->
+    <div class="main-grid">
+
+      <!-- Left: Controls -->
+      <div>
+        <!-- Airline selector -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-title">Select Airline</div>
+          <div class="airline-grid" id="airlineGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Flight details -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-title">Flight Details</div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>Flight Number</label>
+              <input type="text" id="flightNum" placeholder="e.g. 123" maxlength="4" value="123"/>
+            </div>
+            <div class="field">
+              <label>Route</label>
+              <input type="text" id="route" placeholder="e.g. KUL-SIN" value="KUL-SIN"/>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>Date</label>
+              <input type="date" id="flightDate"/>
+            </div>
+            <div class="field">
+              <label>Seat</label>
+              <input type="text" id="seat" placeholder="e.g. 14A" value="14A" maxlength="4"/>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Passenger Name</label>
+            <input type="text" id="passengerName" placeholder="e.g. JOHN DOE" value="JOHN DOE"/>
+          </div>
+
+          <div class="field">
+            <label>Custom QR Data (overrides above if filled)</label>
+            <textarea id="customData" placeholder="Enter any URL or custom text..."></textarea>
+          </div>
+        </div>
+
+        <!-- Style options -->
+        <div class="panel">
+          <div class="panel-title">QR Style</div>
+
+          <div class="slider-wrap">
+            <div class="slider-header">
+              <span class="slider-label">Size</span>
+              <span class="slider-val" id="sizeVal">260px</span>
+            </div>
+            <input type="range" id="qrSize" min="180" max="400" value="260" step="10"/>
+          </div>
+
+          <div class="slider-wrap">
+            <div class="slider-header">
+              <span class="slider-label">Logo Size</span>
+              <span class="slider-val" id="logoSizeVal">18%</span>
+            </div>
+            <input type="range" id="logoSize" min="10" max="28" value="18" step="1"/>
+          </div>
+
+          <div class="color-row">
+            <div class="color-field">
+              <label>QR Color</label>
+              <div class="color-input-wrap">
+                <input type="color" id="qrColor" value="#000000"/>
+                <span class="color-hex" id="qrColorHex">#000000</span>
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Background</label>
+              <div class="color-input-wrap">
+                <input type="color" id="bgColor" value="#FFFFFF"/>
+                <span class="color-hex" id="bgColorHex">#FFFFFF</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ec-label">Error Correction</div>
+          <div class="ec-row" id="ecRow">
+            <button class="ec-btn" data-ec="L">L</button>
+            <button class="ec-btn" data--ec="M">M</button>
+            <button class="ec-btn active" data-ec="Q">Q</button>
+            <button class="ec-btn" data-ec="H">H — Recommended with logo</button>
+          </div>
+
+          <button class="btn-generate" onclick="generateQR()">⚡ Generate QR</button>
+        </div>
+      </div>
+
+      <!-- Right: Preview -->
+      <div class="qr-panel">
+        <div class="qr-display">
+          <div id="qrPreview">
+            <div class="qr-placeholder">
+              <div class="placeholder-icon">◻</div>
+              <div class="placeholder-text">QR CODE PREVIEW</div>
+            </div>
+          </div>
+          <div class="qr-flight-badge" id="flightBadge" style="display:none">
+            <div class="qr-flight-dot"></div>
+            <span class="qr-flight-text" id="flightBadgeText">AK123</span>
+          </div>
+        </div>
+
+        <div class="download-row" id="downloadBtns" style="display:none">
+          <button class="btn-download" onclick="downloadQR('png')">⬇ PNG</button>
+          <button class="btn-download" onclick="downloadQR('svg')">⬇ SVG</button>
+        </div>
+
+        <div class="qr-info" id="qrInfo" style="display:none">
+          <div class="qr-info-row">
+            <span>Airline</span>
+            <span class="qr-info-val" id="infoAirline">—</span>
+          </div>
+          <div class="qr-info-row">
+            <span>Flight</span>
+            <span class="qr-info-val" id="infoFlight">—</span>
+          </div>
+          <div class="qr-info-row">
+            <span>Route</span>
+            <span class="qr-info-val" id="infoRoute">—</span>
+          </div>
+          <div class="qr-info-row">
+            <span>Error Correction</span>
+            <span class="qr-info-val" id="infoEC">—</span>
+          </div>
+          <div class="qr-info-row">
+            <span>Data Length</span>
+            <span class="qr-info-val" id="infoLen">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ─── Airlines ─────────────────────────────────────────────────────────────
+    const AIRLINES = [
+      { code: 'AK', name: 'AirAsia Malaysia', color: '#FF0000' },
+      { code: 'D7', name: 'AirAsia X',        color: '#FF0000' },
+      { code: 'QZ', name: 'AirAsia Indonesia',color: '#FF0000' },
+      { code: 'FD', name: 'Thai AirAsia',     color: '#FF0000' },
+      { code: 'Z2', name: 'AirAsia Philippines', color: '#FF0000' },
+      { code: 'XT', name: 'Indonesia AirAsia X', color: '#FF0000' },
+      { code: 'XJ', name: 'Thai AirAsia X',   color: '#FF0000' },
+      { code: 'BIG', name: 'BIG Loyalty',     color: '#FF0000' },
+      { code: 'AVA', name: 'AWAS / Custom',   color: '#FF0000' },
+    ];
+
+    let selectedAirline = AIRLINES[0];
+    let selectedEC = 'Q';
+    let lastQRData = null;
+
+    // Render airline buttons
+    const grid = document.getElementById('airlineGrid');
+    AIRLINES.forEach((a, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'airline-btn' + (i === 0 ? ' active' : '');
+      btn.innerHTML = `<div class="airline-code">${a.code}</div><div class="airline-name">${a.name}</div>`;
+      btn.onclick = () => {
+        document.querySelectorAll('.airline-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedAirline = a;
+      };
+      grid.appendChild(btn);
+    });
+
+    // Error correction buttons
+    document.querySelectorAll('.ec-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.ec-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedEC = btn.dataset.ec;
+      };
+    });
+
+    // Set today's date
+    document.getElementById('flightDate').value = new Date().toISOString().split('T')[0];
+
+    // Sliders
+    document.getElementById('qrSize').addEventListener('input', e => {
+      document.getElementById('sizeVal').textContent = e.target.value + 'px';
+    });
+    document.getElementById('logoSize').addEventListener('input', e => {
+      document.getElementById('logoSizeVal').textContent = e.target.value + '%';
+    });
+
+    // Color pickers
+    document.getElementById('qrColor').addEventListener('input', e => {
+      document.getElementById('qrColorHex').textContent = e.target.value;
+    });
+    document.getElementById('bgColor').addEventListener('input', e => {
+      document.getElementById('bgColorHex').textContent = e.target.value;
+    });
+
+    // ─── Generate QR ──────────────────────────────────────────────────────────
+    async function generateQR() {
+      const flightNum   = document.getElementById('flightNum').value.trim() || '123';
+      const route       = document.getElementById('route').value.trim() || 'KUL-SIN';
+      const date        = document.getElementById('flightDate').value;
+      const seat        = document.getElementById('seat').value.trim() || '14A';
+      const passenger   = document.getElementById('passengerName').value.trim() || 'PASSENGER';
+      const customData  = document.getElementById('customData').value.trim();
+      const size        = parseInt(document.getElementById('qrSize').value);
+      const logoSizePct = parseInt(document.getElementById('logoSize').value) / 100;
+      const qrColor     = document.getElementById('qrColor').value;
+      const bgColor     = document.getElementById('bgColor').value;
+
+      const qrText = customData ||
+        `${selectedAirline.code}${flightNum}|${route}|${date}|SEAT:${seat}|PAX:${passenger}|AIRLINE:${selectedAirline.name}`;
+
+      lastQRData = { qrText, size, logoSizePct, qrColor, bgColor, flightNum, route, passenger };
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.id = 'qrCanvas';
+
+        await QRCode.toCanvas(canvas, qrText, {
+          width: size,
+          margin: 2,
+          errorCorrectionLevel: selectedEC,
+          color: { dark: qrColor, light: bgColor }
+        });
+
+        // Draw logo on canvas
+        const ctx = canvas.getContext('2d');
+        const logoSize = Math.round(size * logoSizePct);
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+        const padding = logoSize * 0.12;
+
+        // White box behind logo
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.roundRect(logoX - padding, logoY - padding, logoSize + padding*2, logoSize + padding*2, 8);
+        ctx.fill();
+
+        // Draw AirAsia logo (red rect + AA text)
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.roundRect(logoX, logoY, logoSize, logoSize, 6);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `900 ${Math.round(logoSize * 0.36)}px 'Arial Black', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('AA', logoX + logoSize/2, logoY + logoSize/2);
+
+        // Render preview
+        const preview = document.getElementById('qrPreview');
+        preview.innerHTML = '';
+        preview.appendChild(canvas);
+
+        // Badge
+        const badge = document.getElementById('flightBadge');
+        badge.style.display = 'inline-flex';
+        document.getElementById('flightBadgeText').textContent =
+          `${selectedAirline.code}${flightNum} · ${route}`;
+
+        // Info panel
+        document.getElementById('qrInfo').style.display = 'block';
+        document.getElementById('infoAirline').textContent = `${selectedAirline.code} — ${selectedAirline.name}`;
+        document.getElementById('infoFlight').textContent = `${selectedAirline.code}${flightNum}`;
+        document.getElementById('infoRoute').textContent = route;
+        document.getElementById('infoEC').textContent = selectedEC;
+        document.getElementById('infoLen').textContent = qrText.length + ' chars';
+
+        document.getElementById('downloadBtns').style.display = 'grid';
+
+        showToast('QR GENERATED ✓');
+      } catch (err) {
+        showToast('Error: ' + err.message);
+        console.error(err);
+      }
+    }
+
+    // ─── Download ─────────────────────────────────────────────────────────────
+    function downloadQR(format) {
+      const canvas = document.getElementById('qrCanvas');
+      if (!canvas) return;
+
+      const { flightNum, route } = lastQRData;
+      const filename = `${selectedAirline.code}${flightNum}_${route.replace('-','_')}`;
+
+      if (format === 'png') {
+        const link = document.createElement('a');
+        link.download = filename + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else if (format === 'svg') {
+        // Generate SVG version using QRCode lib
+        QRCode.toString(lastQRData.qrText, {
+          type: 'svg',
+          width: lastQRData.size,
+          margin: 2,
+          errorCorrectionLevel: selectedEC,
+          color: { dark: lastQRData.qrColor, light: lastQRData.bgColor }
+        }, (err, svgStr) => {
+          if (err) return;
+          const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+          const link = document.createElement('a');
+          link.download = filename + '.svg';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+        });
+      }
+
+      showToast(`DOWNLOADING ${format.toUpperCase()} ↓`);
+    }
+
+    // ─── Toast ─────────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // Auto-generate on load
+    generateQR();
+  </script>
+</body>
+</html>
