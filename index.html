@@ -103,7 +103,7 @@
 <div class="container">
   <header>
     <div class="header-logo">
-      <img src="https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/1629703651716-J8RVOTD1XO3SDINHP2RG/unnamed+%281%29.png" alt="AirAsia" id="headerLogoImg" crossorigin="anonymous">
+      <img src="https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/1629703651716-J8RVOTD1XO3SDINHP2RG/unnamed+%281%29.png" alt="AirAsia" id="headerLogoImg">
     </div>
     <div>
       <div class="brand-name" id="headerBrandName">GROUND OPERATIONS</div>
@@ -122,7 +122,7 @@
 
       <div class="company-banner">
         <div class="company-banner-logo">
-          <img id="bannerLogoImg" src="https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/1629703651716-J8RVOTD1XO3SDINHP2RG/unnamed+%281%29.png" alt="AirAsia" crossorigin="anonymous">
+          <img id="bannerLogoImg" src="https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/1629703651716-J8RVOTD1XO3SDINHP2RG/unnamed+%281%29.png" alt="AirAsia">
         </div>
         <div class="company-banner-info">
           <div class="name" id="bannerName">AirAsia</div>
@@ -219,24 +219,85 @@ const COMPANIES = [
 
 let selectedCompany = COMPANIES[0], selectedEC = 'M';
 
+function isRemoteLogo(src) { return /^https?:\/\//i.test(src); }
+
+function logoCorsAttr(src) { return isRemoteLogo(src) ? ' crossorigin="anonymous"' : ''; }
+
+function loadLogoImage() {
+  return new Promise((resolve, reject) => {
+    const img = document.getElementById('bannerLogoImg');
+    if (img.complete && img.naturalWidth) { resolve(img); return; }
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+  });
+}
+
+function drawLogoOnCanvas(ctx, img, size, logoSizePct) {
+  const ls = Math.round(size * logoSizePct);
+  const cx = size / 2;
+  const cy = size / 2;
+  const pad = Math.round(ls * 0.15);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(cx, cy, ls / 2 + pad, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, ls / 2, 0, Math.PI * 2);
+  ctx.clip();
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const scale = Math.min(ls / iw, ls / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+  ctx.restore();
+}
+
+function drawLogoFallback(ctx, size, logoSizePct) {
+  const ls = Math.round(size * logoSizePct);
+  const cx = size / 2;
+  const cy = size / 2;
+  const pad = Math.round(ls * 0.15);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(cx, cy, ls / 2 + pad, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FF0000';
+  ctx.beginPath();
+  ctx.arc(cx, cy, ls / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold ' + Math.round(ls * 0.28) + 'px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(selectedCompany.code.substring(0, 2), cx, cy);
+}
+
 function initCompanyGrid() {
   const grid = document.getElementById('companyGrid');
   grid.innerHTML = '';
   COMPANIES.forEach((c, i) => {
     const btn = document.createElement('button');
     btn.className = 'company-btn' + (i===0?' active':'');
-    btn.innerHTML = `<div class="company-btn-logo"><img src="${c.logo}" alt="${c.name}" loading="lazy" crossorigin="anonymous"></div><div class="company-code">${c.code}</div><div class="company-name">${c.name}</div>`;
+    btn.innerHTML = `<div class="company-btn-logo"><img src="${c.logo}" alt="${c.name}" loading="lazy"${logoCorsAttr(c.logo)}></div><div class="company-code">${c.code}</div><div class="company-name">${c.name}</div>`;
     btn.onclick = () => { selectedCompany=c; document.querySelectorAll('.company-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); updateBanner(c); };
     grid.appendChild(btn);
   });
 }
 
+function setLogoImg(el, src) {
+  if (isRemoteLogo(src)) el.crossOrigin = 'anonymous';
+  else el.removeAttribute('crossorigin');
+  el.src = src;
+}
+
 function updateBanner(c) {
-  document.getElementById('bannerLogoImg').src = c.logo;
+  setLogoImg(document.getElementById('bannerLogoImg'), c.logo);
   document.getElementById('bannerName').textContent = c.name;
   document.getElementById('bannerDesc').textContent = c.desc;
   document.getElementById('bannerCode').textContent = c.code;
-  document.getElementById('headerLogoImg').src = c.logo;
+  setLogoImg(document.getElementById('headerLogoImg'), c.logo);
 }
 
 function onUrlInput(input) { document.getElementById('urlClearBtn').classList.toggle('show', input.value.length>0); }
@@ -287,23 +348,9 @@ function generateQR() {
         showToast('QR GENERATED ✓');
         window._lastQRCanvas=canvas;
       };
-      const logoImg=new Image();
-      logoImg.crossOrigin='anonymous';
-      logoImg.onload=()=>{
-        const ls=Math.round(size*logoSizePct),lx=Math.round((size-ls)/2),ly=lx,pad=Math.round(ls*0.15);
-        ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2); ctx.fill();
-        ctx.save(); ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2,0,Math.PI*2); ctx.clip();
-        ctx.drawImage(logoImg,lx,ly,ls,ls); ctx.restore(); finish();
-      };
-      logoImg.onerror=()=>{
-        const ls=Math.round(size*logoSizePct),lx=Math.round((size-ls)/2),ly=lx,pad=Math.round(ls*0.15);
-        ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#FF0000'; ctx.beginPath(); ctx.arc(lx+ls/2,ly+ls/2,ls/2,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#FFFFFF'; ctx.font='bold '+Math.round(ls*0.28)+'px Arial';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(selectedCompany.code.substring(0,2),lx+ls/2,ly+ls/2); finish();
-      };
-      logoImg.src=selectedCompany.logo;
+      loadLogoImage()
+        .then(img => { drawLogoOnCanvas(ctx, img, size, logoSizePct); finish(); })
+        .catch(() => { drawLogoFallback(ctx, size, logoSizePct); finish(); });
     },250);
   } catch(e){showToast('Error: URL may be too long');if(document.body.contains(tempDiv))document.body.removeChild(tempDiv);}
 }
@@ -322,6 +369,7 @@ function downloadQR(fmt) {
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 initCompanyGrid();
+updateBanner(selectedCompany);
 </script>
 </body>
 </html>
